@@ -1,0 +1,79 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Collaborative Drawing App</title>
+    <style>
+        body { margin: 0; }
+        canvas { border: 1px solid black; display: block; }
+    </style>
+    <script src="/socket.io/socket.io.js"></script>
+    <script>
+        let socket;
+        let canvas;
+        let ctx;
+        let drawing = false;
+
+        function setup() {
+            canvas = document.createElement('canvas');
+            canvas.width = window.innerWidth;
+            canvas.height = window.innerHeight;
+            ctx = canvas.getContext('2d');
+            document.body.appendChild(canvas);
+
+            canvas.addEventListener('mousedown', startDrawing);
+            canvas.addEventListener('mouseup', stopDrawing);
+            canvas.addEventListener('mousemove', draw);
+
+            socket = io();
+            socket.on('drawing', drawFromSocket);
+        }
+
+        function startDrawing(e) {
+            drawing = true;
+            draw(e); // Draw immediately on mousedown
+        }
+
+        function stopDrawing() {
+            drawing = false;
+            ctx.beginPath(); // Reset path for new line
+        }
+
+        function draw(e) {
+            if (!drawing) return;
+
+            const rect = canvas.getBoundingClientRect();
+            const x = e.clientX - rect.left;
+            const y = e.clientY - rect.top;
+
+            ctx.lineWidth = 5;
+            ctx.lineCap = 'round';
+            ctx.strokeStyle = 'black';
+
+            ctx.lineTo(x, y);
+            ctx.stroke();
+            ctx.beginPath();
+            ctx.moveTo(x, y);
+
+            // Emit drawing data to server
+            socket.emit('drawing', { x, y });
+        }
+
+        function drawFromSocket(data) {
+            ctx.lineWidth = 5;
+            ctx.lineCap = 'round';
+            ctx.strokeStyle = 'black';
+
+            ctx.lineTo(data.x, data.y);
+            ctx.stroke();
+            ctx.beginPath();
+            ctx.moveTo(data.x, data.y);
+        }
+
+        window.onload = setup;
+    </script>
+</head>
+<body>
+</body>
+</html>

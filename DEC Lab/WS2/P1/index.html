@@ -1,0 +1,81 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>Chat App</title>
+  <style>
+    body { font-family: Arial, sans-serif; margin: 0; padding: 0; }
+    #messages { list-style-type: none; margin: 0; padding: 0; }
+    #messages li { padding: 8px; border-bottom: 1px solid #ddd; }
+    #messages .notification { color: gray; font-style: italic; }
+    #form { display: flex; position: fixed; bottom: 0; width: 100%; }
+    #input { flex: 1; padding: 10px; font-size: 16px; }
+    #send { padding: 10px 20px; font-size: 16px; }
+    #username-form { margin: 20px; text-align: center; }
+    #username-input { padding: 10px; font-size: 16px; }
+    #set-username { padding: 10px 20px; font-size: 16px; }
+  </style>
+</head>
+<body>
+  <div id="username-form">
+    <input id="username-input" placeholder="Enter your username..." />
+    <button id="set-username">Set Username</button>
+  </div>
+
+  <ul id="messages"></ul>
+
+  <form id="form" style="display: none;">
+    <input id="input" autocomplete="off" placeholder="Type a message..." />
+    <button id="send">Send</button>
+  </form>
+
+  <script src="/socket.io/socket.io.js"></script>
+  <script>
+    const socket = io();
+
+    const usernameInput = document.getElementById('username-input');
+    const setUsernameButton = document.getElementById('set-username');
+    const form = document.getElementById('form');
+    const input = document.getElementById('input');
+    const messages = document.getElementById('messages');
+
+    setUsernameButton.addEventListener('click', () => {
+      const username = usernameInput.value.trim();
+      if (username) {
+        socket.emit('set username', username);
+
+        document.getElementById('username-form').style.display = 'none';
+
+        form.style.display = 'flex';
+      }
+    });
+
+    form.addEventListener('submit', (e) => {
+      e.preventDefault();
+      if (input.value) {
+        socket.emit('chat message', input.value);
+
+        input.value = '';
+      }
+    });
+
+    socket.on('chat message', (data) => {
+      const item = document.createElement('li');
+      item.textContent = `${data.username}: ${data.message}`;
+      messages.appendChild(item);
+
+      window.scrollTo(0, document.body.scrollHeight);
+    });
+
+    socket.on('chat notification', (notification) => {
+      const item = document.createElement('li');
+      item.textContent = notification;
+      item.classList.add('notification'); 
+      messages.appendChild(item);
+
+      window.scrollTo(0, document.body.scrollHeight);
+    });
+  </script>
+</body>
+</html>
